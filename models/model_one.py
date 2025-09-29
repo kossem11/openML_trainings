@@ -8,36 +8,37 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 import graphviz
 
-df = pd.read_csv('data/adult.csv')
-#print(df.info())
+data_path = 'data/adult.csv'
 
-df['sex'] = pd.factorize(df['sex'])[0]
-df['race'], cat_races = pd.factorize(df['race'])
-df['relationship'], cat_relations = pd.factorize(df['relationship'])
-df['education'], cat_ed = pd.factorize(df['education'])
-df['occupation'], cat_ocup = pd.factorize(df['occupation'])
-df['workclass'] = pd.factorize(df['workclass'])[0]
-y , cat_inc = pd.factorize(df['income'])
-df.drop(['native.country','marital.status', 'education.num', 'income'], axis=1, inplace=True)
+def loadAndPreprocess(data_path):
+    df = pd.read_csv(data_path)
+    df['sex'] = pd.factorize(df['sex'])[0]
+    df['race'], cat_races = pd.factorize(df['race'])
+    df['relationship'], cat_relations = pd.factorize(df['relationship'])
+    df['education'], cat_ed = pd.factorize(df['education'])
+    df['occupation'], cat_ocup = pd.factorize(df['occupation'])
+    df['workclass'] = pd.factorize(df['workclass'])[0]
+    y , cat_inc = pd.factorize(df['income'])
+    df.drop(['native.country','marital.status', 'education.num', 'income'], axis=1, inplace=True)
+    splited = train_test_split(df.values, y, test_size=0.2, random_state=12)
+    return df, splited
 
-#print(cat_races, cat_relations)
-#print(df.info())
-
-X_train, X_hold, y_train, y_hold = train_test_split(df.values, y, test_size=0.2, random_state=12)
-
-def SimpleKNN(X_train, X_hold, y_train, y_hold):
+def SimpleKNN(splited):
+    X_train, X_hold, y_train, y_hold = splited
     knn = KNeighborsClassifier(n_neighbors=10)
     knn.fit(X_train, y_train)
     knn_pred = knn.predict(X_hold)
     return knn_pred, knn, accuracy_score(y_hold, knn_pred)
 
-def SipleTree(X_train, X_hold, y_train, y_hold ):
+def SipleTree(splited):
+    X_train, X_hold, y_train, y_hold = splited
     tree = DecisionTreeClassifier (max_depth=5, random_state=12)
     tree.fit (X_train, y_train)
     tree_pred = tree.predict(X_hold)
     return tree_pred, tree, accuracy_score(y_hold, tree_pred)
 
-def gridKNN(X_train, X_hold, y_train, y_hold):
+def gridKNN(splited):
+    X_train, X_hold, y_train, y_hold = splited
     knn_pipe = Pipeline([('scaler', StandardScaler()), ('knn', KNeighborsClassifier(n_jobs=-1))])
     knn_params = {'knn__n_neighbors': range(1,10)}
     knn_grid = GridSearchCV(knn_pipe, knn_params, cv=5, n_jobs=-1, verbose=True)
@@ -46,8 +47,8 @@ def gridKNN(X_train, X_hold, y_train, y_hold):
     return knn_grid, accuracy_score(y_hold, knn_grid.predict(X_hold))
 
 #grid tree
-def gridTree(X_train, X_hold, y_train, y_hold, tree):
-
+def gridTree(splited, tree, df):
+    X_train, X_hold, y_train, y_hold = splited
     tree_params = {'max_depth': range(1,9), "max_features": range(4,10)}
     tree_grid = GridSearchCV(tree, tree_params, cv=5, n_jobs=-1, verbose=True)
     tree_grid.fit(X_train, y_train)
@@ -67,6 +68,6 @@ def gridTree(X_train, X_hold, y_train, y_hold, tree):
     graph = graphviz.Source(dot_data)
     graph.render("best_decision_tree")
     graph.view()
-
-_, X, _ = SipleTree(X_train, X_hold, y_train, y_hold)
-gridTree(X_train, X_hold, y_train, y_hold, X)
+cdf, spl = loadAndPreprocess(data_path=data_path)
+_, X, _ = SipleTree(spl)
+gridTree(spl, X, cdf)
