@@ -1,11 +1,17 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+#from __future__ import division, print_function
+import warnings
+import seaborn as sns
+
 import graphviz
 
 data_path = 'data/adult.csv'
@@ -20,6 +26,7 @@ def loadAndPreprocess(data_path):
     df['workclass'] = pd.factorize(df['workclass'])[0]
     y , cat_inc = pd.factorize(df['income'])
     df.drop(['native.country','marital.status', 'education.num', 'income'], axis=1, inplace=True)
+    print(df.info())
     splited = train_test_split(df.values, y, test_size=0.2, random_state=12)
     return df, splited
 
@@ -68,6 +75,21 @@ def gridTree(splited, tree, df):
     graph = graphviz.Source(dot_data)
     graph.render("best_decision_tree")
     graph.view()
+
+def RandForestSelf(splited):
+    forest = RandomForestClassifier(n_estimators=10, n_jobs=-1, random_state=12)
+    forest_params = {'max_depth': range(1,11) , 'max_features': range(1,15)}
+    forest_grid = GridSearchCV(forest, forest_params, cv=5, n_jobs=-1, verbose=True)
+    X_train, X_hold, y_train, y_hold = splited
+    forest_grid.fit(X_train, y_train)
+    print(accuracy_score(y_hold, forest_grid.predict(X_hold)), forest_grid.best_params_)
+
+def SimpleLogicReg(df):
+    x_val = df['']
+
+    return
+
 cdf, spl = loadAndPreprocess(data_path=data_path)
 _, X, _ = SipleTree(spl)
-gridTree(spl, X, cdf)
+#gridTree(spl, X, cdf)
+RandForestSelf(spl)
